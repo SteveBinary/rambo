@@ -1,0 +1,9 @@
+# Nix
+.direnv/
+result/
+
+# IDEs
+.idea/
+
+# Rust
+target/
