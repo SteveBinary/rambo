@@ -57,9 +57,11 @@ fn main() -> ExitCode {
         },
     };
 
-    let Some((paths, errors)) =
-        evaluate_files_from_glob_pattern(&args.pattern, args.case_insensitive)
-    else {
+    let Some((paths, errors)) = evaluate_files_from_glob_pattern(
+        &args.pattern,
+        args.case_insensitive,
+        args.include_symlinks,
+    ) else {
         return ExitCode::FAILURE;
     };
 

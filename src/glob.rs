@@ -38,6 +38,7 @@ impl Display for GlobEvaluationError {
 pub fn evaluate_files_from_glob_pattern(
     pattern: &str,
     case_insensitive: bool,
+    include_symlinks: bool,
 ) -> Option<(Vec<PathBuf>, Vec<GlobEvaluationError>)> {
     let match_options = MatchOptions {
         case_sensitive: case_insensitive.not(),
@@ -57,20 +58,22 @@ pub fn evaluate_files_from_glob_pattern(
         |(mut paths, mut errors), glob_result| {
             match glob_result {
                 Ok(path) => {
-                    match path.canonicalize() {
-                        Ok(path) => paths.push(path),
-                        Err(error) => {
-                            let error_description = format!(
-                                "Failed to canonicalize path '{}': {}",
-                                path.display(),
-                                error
-                            );
-                            errors.push(GlobEvaluationError::Other {
-                                path_buf: path,
-                                description: error_description,
-                            });
-                        }
-                    };
+                    if include_symlinks || path.is_symlink().not() {
+                        match path.canonicalize() {
+                            Ok(path) => paths.push(path),
+                            Err(error) => {
+                                let error_description = format!(
+                                    "Failed to canonicalize path '{}': {}",
+                                    path.display(),
+                                    error
+                                );
+                                errors.push(GlobEvaluationError::Other {
+                                    path_buf: path,
+                                    description: error_description,
+                                });
+                            }
+                        };
+                    }
                 }
                 Err(error) => errors.push(GlobEvaluationError::GlobError(error)),
             };

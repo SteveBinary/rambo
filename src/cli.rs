@@ -18,7 +18,7 @@ pub(crate) struct RamboCli {
 
     #[clap(
         long,
-        short,
+        short = 'i',
         default_value_t = false,
         help = "Match the pattern in a case insensitive way."
     )]
@@ -39,4 +39,12 @@ pub(crate) struct RamboCli {
         help = "Override the time zone offset relative to UTC, like '+01:00' or '-02:30'."
     )]
     pub(crate) time_offset: Option<String>,
+
+    #[clap(
+        long,
+        short = 's',
+        default_value_t = false,
+        help = "Include and follow symlinks."
+    )]
+    pub(crate) include_symlinks: bool,
 }
