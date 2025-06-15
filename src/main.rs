@@ -32,6 +32,18 @@ fn main() -> ExitCode {
     let args = cli::RamboCli::parse();
     let mut statistics = Statistics::new();
 
+    let current_working_directory = match std::env::current_dir() {
+        Ok(working_directory) => format!(
+            "{}{}",
+            working_directory.display(),
+            std::path::MAIN_SEPARATOR
+        ),
+        Err(error) => {
+            log::error!("Cannot determine current working directory: {}", error);
+            return ExitCode::FAILURE;
+        }
+    };
+
     let time_offset = match args.time_offset {
         None => None,
         Some(time_offset_string) => match FixedOffset::from_str(&time_offset_string) {
@@ -88,7 +100,11 @@ fn main() -> ExitCode {
             Ok(media_asset) => media_asset,
             Err((path_buf, error)) => {
                 statistics.failed_files += 1;
-                log::warn!("Cannot process {}: {}", path_buf.display(), error);
+                log::warn!(
+                    "Cannot process {}: {}",
+                    format_path_buf_without_prefix(&path_buf, &current_working_directory),
+                    error
+                );
                 continue;
             }
         };
@@ -102,7 +118,10 @@ fn main() -> ExitCode {
                 statistics.failed_files += 1;
                 log::warn!(
                     "Cannot extract creation datetime from {}: {}",
-                    media_asset.path_buf.display(),
+                    format_path_buf_without_prefix(
+                        &media_asset.path_buf,
+                        &current_working_directory
+                    ),
                     error
                 );
                 continue;
@@ -119,6 +138,7 @@ fn main() -> ExitCode {
             &media_asset.path_buf,
             &datetime_formatted,
             args.no_dry_run.not(),
+            &current_working_directory,
             &mut statistics,
         );
     }
@@ -176,7 +196,7 @@ fn evaluate_files_from_glob_pattern(
         |path_buf: &PathBuf| path_buf.as_os_str().to_ascii_lowercase();
 
     let lowercase_os_str_from_glob_error =
-        |path_buf: &GlobError| lowercase_os_str_from_path_buf(&path_buf.path().to_path_buf());
+        |glob_error: &GlobError| lowercase_os_str_from_path_buf(&glob_error.path().to_path_buf());
 
     paths.sort_by_key(lowercase_os_str_from_path_buf);
     errors.sort_by_key(lowercase_os_str_from_glob_error);
@@ -201,49 +221,59 @@ fn get_media_assets_from_path_bufs(
 }
 
 fn rename_file(
-    path_buf: &PathBuf,
+    file_path_buf: &PathBuf,
     new_file_name_without_extension: &str,
     is_dry_run: bool,
+    current_working_directory: &str,
     statistics: &mut Statistics,
 ) {
-    let mut new_file_path_buf = path_buf.clone();
+    let mut new_file_path_buf = file_path_buf.clone();
     new_file_path_buf.set_file_name(new_file_name_without_extension);
-    if let Some(extension) = path_buf.extension() {
+    if let Some(extension) = file_path_buf.extension() {
         new_file_path_buf.set_extension(extension.to_ascii_lowercase());
     }
 
-    if *path_buf == new_file_path_buf {
+    if *file_path_buf == new_file_path_buf {
         log::info!(
             "This file has already the correct name: {}",
-            new_file_path_buf.display()
+            format_path_buf_without_prefix(&new_file_path_buf, &current_working_directory)
         );
         statistics.skipped_files += 1;
     } else if is_dry_run {
         log::info!(
-            "[DRY RUN] Renaming {} ==> {}",
-            path_buf.display(),
-            new_file_path_buf.display()
+            "[DRY RUN] Renaming: {} ==> {}",
+            format_path_buf_without_prefix(file_path_buf, &current_working_directory),
+            format_path_buf_without_prefix(&new_file_path_buf, &current_working_directory)
         );
         statistics.renamed_files += 1;
     } else {
-        match std::fs::rename(&path_buf, &new_file_path_buf) {
+        match std::fs::rename(&file_path_buf, &new_file_path_buf) {
             Ok(_) => {
                 log::info!(
-                    "Renaming {} ==> {}",
-                    path_buf.display(),
-                    new_file_path_buf.display()
+                    "Renaming: {} ==> {}",
+                    format_path_buf_without_prefix(file_path_buf, &current_working_directory),
+                    format_path_buf_without_prefix(&new_file_path_buf, &current_working_directory)
                 );
                 statistics.renamed_files += 1;
             }
             Err(error) => {
                 log::warn!(
                     "Failed to rename {} to {}: {}",
-                    path_buf.display(),
-                    new_file_path_buf.display(),
+                    format_path_buf_without_prefix(file_path_buf, &current_working_directory),
+                    format_path_buf_without_prefix(&new_file_path_buf, &current_working_directory),
                     error
                 );
                 statistics.failed_files += 1;
             }
         };
     }
+}
+
+fn format_path_buf_without_prefix(path_buf: &PathBuf, prefix: &str) -> String {
+    let path_string = path_buf.display().to_string();
+
+    path_string
+        .strip_prefix(prefix)
+        .map(String::from)
+        .unwrap_or(path_string)
 }
