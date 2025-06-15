@@ -32,11 +32,15 @@ fn main() -> ExitCode {
     let args = cli::RamboCli::parse();
     let mut statistics = Statistics::new();
 
-    if let Some(ref time_offset) = args.time_offset {
-        if let Err(error) = FixedOffset::from_str(time_offset) {
-            log::error!("Time offset '{}' is invalid: {}", time_offset, error);
-            return ExitCode::FAILURE;
-        };
+    let time_offset = match args.time_offset {
+        None => None,
+        Some(time_offset_string) => match FixedOffset::from_str(&time_offset_string) {
+            Ok(time_offset) => Some(time_offset),
+            Err(error) => {
+                log::error!("Time offset '{}' is invalid: {}", time_offset_string, error);
+                return ExitCode::FAILURE;
+            }
+        },
     };
 
     let Some((paths, errors)) =
@@ -54,24 +58,41 @@ fn main() -> ExitCode {
             args.pattern
         );
 
-        for error in errors {
+        for error in errors.iter() {
             log::warn!("{}", error);
         }
     }
 
-    let mut media_parser = MediaParser::new();
-
-    let media_assets: Vec<MediaAsset> = get_media_assets_from_path_bufs(paths, &mut statistics);
-
-    if media_assets.is_empty() {
+    if paths.is_empty() && errors.is_empty() {
         log::warn!(
-            "No media files matched the given glob pattern: {}",
+            "No media files will be processed. Make sure the glob pattern '{}' is correct.",
             args.pattern
         );
+
         return ExitCode::SUCCESS;
+    } else if paths.is_empty() && errors.is_empty().not() {
+        log::warn!(
+            "No media files will be processed. Make sure the glob pattern '{}' is correct and you have adequate permissions.",
+            args.pattern
+        );
+
+        return ExitCode::FAILURE;
     }
 
+    let media_assets = get_media_assets_from_path_bufs(paths);
+
+    let mut media_parser = MediaParser::new();
+
     for media_asset in media_assets {
+        let media_asset = match media_asset {
+            Ok(media_asset) => media_asset,
+            Err((path_buf, error)) => {
+                statistics.failed_files += 1;
+                log::warn!("Cannot process {}: {}", path_buf.display(), error);
+                continue;
+            }
+        };
+
         let datetime = match extract_creation_datetime_from_media_source(
             media_asset.media_source,
             &mut media_parser,
@@ -88,13 +109,7 @@ fn main() -> ExitCode {
             }
         };
 
-        let datetime_formatted = args
-            .time_offset
-            .as_ref()
-            .map(|time_offset| {
-                FixedOffset::from_str(&time_offset)
-                    .expect("The time offset should have been validated above.")
-            })
+        let datetime_formatted = time_offset
             .map(|time_offset| datetime.with_timezone(&time_offset))
             .unwrap_or(datetime)
             .format(&args.format)
@@ -171,24 +186,18 @@ fn evaluate_files_from_glob_pattern(
 
 fn get_media_assets_from_path_bufs(
     path_bufs: Vec<PathBuf>,
-    statistics: &mut Statistics,
-) -> Vec<MediaAsset> {
+) -> impl Iterator<Item = Result<MediaAsset, (PathBuf, nom_exif::Error)>> {
     path_bufs
         .into_iter()
         .filter(|path_buf| path_buf.is_file())
-        .filter_map(|path_buf| {
+        .map(|path_buf| {
             MediaSource::file_path(&path_buf)
-                .inspect_err(|error| {
-                    statistics.failed_files += 1;
-                    log::warn!("Cannot process {}: {}", path_buf.display(), error);
-                })
+                .map_err(|error| (path_buf.clone(), error))
                 .map(|media_source| MediaAsset {
                     media_source,
                     path_buf,
                 })
-                .ok()
         })
-        .collect()
 }
 
 fn rename_file(
