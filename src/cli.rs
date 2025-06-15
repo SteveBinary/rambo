@@ -27,7 +27,7 @@ pub(crate) struct RamboCli {
     #[clap(
         long,
         short,
-        default_value = "%Y-%m-%d_%H-%M-%S",
+        default_value = "%Y-%m-%d__%H-%M-%S",
         help = "The format of the renamed file (without the extension). See: https://docs.rs/chrono/0.4.41/chrono/format/strftime/index.html#specifiers"
     )]
     pub(crate) format: String,
