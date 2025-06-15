@@ -68,7 +68,7 @@ fn main() -> ExitCode {
 
         log::warn!(
             "Some paths could not be read to determine if their contents match the given glob pattern '{}'. \
-            Make sure you have the permissions for these paths:",
+            Make sure you have the permissions for these paths and symlinks are not broken.",
             args.pattern
         );
 
