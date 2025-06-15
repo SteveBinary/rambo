@@ -24,8 +24,11 @@ pub fn extract_creation_datetime_from_media_source(
     }
 }
 
-const EXIF_TAGS_FOR_CREATION_DATETIME: [ExifTag; 2] =
-    [ExifTag::DateTimeOriginal, ExifTag::CreateDate];
+const EXIF_TAGS_FOR_CREATION_DATETIME: [ExifTag; 3] = [
+    ExifTag::DateTimeOriginal,
+    ExifTag::OffsetTimeOriginal,
+    ExifTag::CreateDate,
+];
 
 fn extract_creation_datetime_from_exif(exif: &Exif) -> anyhow::Result<DateTime<FixedOffset>> {
     for exif_tag in EXIF_TAGS_FOR_CREATION_DATETIME {
