@@ -24,11 +24,43 @@
         craneLib = (inputs.crane.mkLib pkgs).overrideToolchain (
           p: p.rust-bin.fromRustupToolchainFile ./rust-toolchain.toml
         );
+
+        src = craneLib.cleanCargoSource ./.;
+
+        commonArgs = {
+          inherit src;
+          strictDeps = true;
+
+          buildInputs = [
+            # add additional build inputs here
+          ];
+        };
+
+        # all dependencies, without our code -> make caching effective
+        cargoArtifacts = craneLib.buildDepsOnly (
+          commonArgs
+          // {
+            cargoBuildCommand = "cargo build --profile release-with-lto";
+          }
+        );
+
+        rambo = craneLib.buildPackage (
+          commonArgs
+          // {
+            inherit cargoArtifacts;
+            cargoBuildCommand = "cargo build --profile release-with-lto";
+          }
+        );
       in
       {
+        packages = {
+          inherit rambo;
+          default = rambo;
+        };
+
         devShells.default = craneLib.devShell {
           packages = with pkgs; [
-            # addional packages for the dev shell
+            # additional packages for the dev shell
           ];
         };
 

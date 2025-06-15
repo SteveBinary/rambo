@@ -1,6 +1,19 @@
 [package]
 name = "rambo"
-version = "0.1.0"
+version = "1.0.0"
 edition = "2024"
+authors = ["SteveBinary"]
+description = "RAMBO - Rename All Media By Order - rename media files based on their date/time of creation"
 
 [dependencies]
+anyhow = { version = "1.0.98" }
+chrono = { version = "0.4.41" }
+clap = { version = "4.5.38", features = ["derive"] }
+env_logger = { version = "0.11.8" }
+glob = { version = "0.3.2" }
+log = { version = "0.4.27" }
+nom-exif = { version = "2.5.4" }
+
+[profile.release-with-lto]
+inherits = "release"
+lto = true
