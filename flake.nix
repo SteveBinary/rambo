@@ -30,10 +30,6 @@
         commonArgs = {
           inherit src;
           strictDeps = true;
-
-          buildInputs = [
-            # add additional build inputs here
-          ];
         };
 
         # all dependencies, without our code -> make caching effective
@@ -49,6 +45,15 @@
           // {
             inherit cargoArtifacts;
             cargoBuildCommand = "cargo build --profile release-with-lto";
+            nativeBuildInputs = with pkgs; [
+              installShellFiles
+            ];
+            postInstall = ''
+              installShellCompletion --cmd rambo \
+                --bash <($out/bin/rambo --completions bash) \
+                --fish <($out/bin/rambo --completions fish) \
+                --zsh <($out/bin/rambo --completions zsh)
+            '';
           }
         );
       in
