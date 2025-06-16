@@ -1,4 +1,5 @@
-use clap::Parser;
+use clap::{CommandFactory, Parser};
+use clap_complete::{generate, Generator, Shell};
 
 #[derive(Debug, Parser)]
 #[command(version, about)]
@@ -36,6 +37,7 @@ pub(crate) struct RamboCli {
         long,
         short,
         allow_hyphen_values = true,
+        value_name = "OFFSET",
         help = "Override the time zone offset relative to UTC, like '+01:00' or '-02:30'."
     )]
     pub(crate) time_offset: Option<String>,
@@ -47,4 +49,23 @@ pub(crate) struct RamboCli {
         help = "Include and follow symlinks."
     )]
     pub(crate) include_symlinks: bool,
+
+    #[clap(
+        long,
+        value_name = "SHELL",
+        help = "Generate completion scripts for your shell."
+    )]
+    pub(crate) completions: Option<Shell>,
+}
+
+impl RamboCli {
+    pub(crate) fn print_completions<G: Generator>(generator: G) {
+        let ref mut cmd = Self::command();
+        generate(
+            generator,
+            cmd,
+            cmd.get_name().to_string(),
+            &mut std::io::stdout(),
+        );
+    }
 }

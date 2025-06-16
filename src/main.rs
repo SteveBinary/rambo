@@ -1,5 +1,6 @@
 #![forbid(unsafe_code)]
 
+use crate::cli::RamboCli;
 use crate::extract::extract_creation_datetime_from_media_source;
 use crate::glob::evaluate_files_from_glob_pattern;
 use crate::statistics::Statistics;
@@ -31,8 +32,13 @@ fn main() -> ExitCode {
         .filter_level(LevelFilter::Info)
         .init();
 
-    let args = cli::RamboCli::parse();
+    let args = RamboCli::parse();
     let mut statistics = Statistics::new();
+
+    if let Some(completion_generator) = args.completions {
+        RamboCli::print_completions(completion_generator);
+        return ExitCode::SUCCESS;
+    }
 
     let current_working_directory = match std::env::current_dir() {
         Ok(working_directory) => format!(
