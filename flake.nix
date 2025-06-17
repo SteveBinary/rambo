@@ -30,21 +30,16 @@
         commonArgs = {
           inherit src;
           strictDeps = true;
+          CARGO_PROFILE = "release-with-lto";
         };
 
         # all dependencies, without our code -> make caching effective
-        cargoArtifacts = craneLib.buildDepsOnly (
-          commonArgs
-          // {
-            cargoBuildCommand = "cargo build --profile release-with-lto";
-          }
-        );
+        cargoArtifacts = craneLib.buildDepsOnly commonArgs;
 
         rambo = craneLib.buildPackage (
           commonArgs
           // {
             inherit cargoArtifacts;
-            cargoBuildCommand = "cargo build --profile release-with-lto";
             nativeBuildInputs = with pkgs; [
               installShellFiles
             ];
