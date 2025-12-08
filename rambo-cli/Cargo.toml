@@ -1,0 +1,14 @@
+[package]
+name = "rambo-cli"
+description.workspace = true
+authors.workspace = true
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+rambo = { workspace = true }
+
+clap = { workspace = true }
+clap_complete = { workspace = true }
+env_logger = { workspace = true }
+log = { workspace = true }

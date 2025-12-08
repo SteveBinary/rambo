@@ -30,6 +30,7 @@
         commonArgs = {
           inherit src;
           strictDeps = true;
+          pname = "rambo";
           CARGO_PROFILE = "release-with-lto";
         };
 
@@ -44,6 +45,8 @@
               installShellFiles
             ];
             postInstall = ''
+              mv $out/bin/rambo-cli $out/bin/rambo
+
               installShellCompletion --cmd rambo \
                 --bash <($out/bin/rambo --completions bash) \
                 --fish <($out/bin/rambo --completions fish) \
@@ -64,7 +67,7 @@
           ];
         };
 
-        formatter = pkgs.nixfmt-rfc-style;
+        formatter = pkgs.nixfmt;
       }
     );
 }

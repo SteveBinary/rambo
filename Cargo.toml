@@ -1,18 +1,26 @@
-[package]
-name = "rambo"
+[workspace]
+resolver = "3"
+members = [
+    "rambo",
+    "rambo-cli",
+]
+
+[workspace.package]
+description = "RAMBO - Rename All Media By Order - rename media files based on their date/time of creation"
+authors = ["SteveBinary"]
 version = "1.0.0"
 edition = "2024"
-authors = ["SteveBinary"]
-description = "RAMBO - Rename All Media By Order - rename media files based on their date/time of creation"
 
-[dependencies]
+[workspace.dependencies]
+rambo = { path = "rambo" }
+
 anyhow = { version = "1.0.100" }
 chrono = { version = "0.4.42" }
-clap = { version = "4.5.51", features = ["derive"] }
-clap_complete = { version = "4.5.60" }
+clap = { version = "4.5.53", features = ["derive"] }
+clap_complete = { version = "4.5.61" }
 env_logger = { version = "0.11.8" }
 glob = { version = "0.3.3" }
-log = { version = "0.4.28" }
+log = { version = "0.4.29" }
 nom-exif = { version = "2.5.4" }
 
 [profile.release-with-lto]

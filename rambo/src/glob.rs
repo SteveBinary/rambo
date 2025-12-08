@@ -7,10 +7,7 @@ use std::path::{Path, PathBuf};
 #[derive(Debug)]
 pub enum GlobEvaluationError {
     GlobError(GlobError),
-    Other {
-        path_buf: PathBuf,
-        description: String,
-    },
+    Other { path_buf: PathBuf, description: String },
 }
 
 impl GlobEvaluationError {
@@ -35,11 +32,7 @@ impl Display for GlobEvaluationError {
     }
 }
 
-pub fn evaluate_files_from_glob_pattern(
-    pattern: &str,
-    case_insensitive: bool,
-    include_symlinks: bool,
-) -> Option<(Vec<PathBuf>, Vec<GlobEvaluationError>)> {
+pub fn evaluate_files_from_glob_pattern(pattern: &str, case_insensitive: bool, include_symlinks: bool) -> Option<(Vec<PathBuf>, Vec<GlobEvaluationError>)> {
     let match_options = MatchOptions {
         case_sensitive: case_insensitive.not(),
         ..Default::default()
@@ -62,11 +55,7 @@ pub fn evaluate_files_from_glob_pattern(
                         match path.canonicalize() {
                             Ok(path) => paths.push(path),
                             Err(error) => {
-                                let error_description = format!(
-                                    "Failed to canonicalize path '{}': {}",
-                                    path.display(),
-                                    error
-                                );
+                                let error_description = format!("Failed to canonicalize path '{}': {}", path.display(), error);
                                 errors.push(GlobEvaluationError::Other {
                                     path_buf: path,
                                     description: error_description,
@@ -91,6 +80,7 @@ pub fn evaluate_files_from_glob_pattern(
 fn lowercase_os_str_from_path_buf(path_buf: &PathBuf) -> OsString {
     path_buf.as_os_str().to_ascii_lowercase()
 }
+
 fn lowercase_os_str_from_glob_evaluation_error(glob_error: &GlobEvaluationError) -> OsString {
     glob_error.path().as_os_str().to_ascii_lowercase()
 }
